@@ -1,0 +1,139 @@
+# LynLift iOS Fitness Tracker - Cursor Rules
+
+## Project Overview
+LynLift is a native iOS fitness tracking app built with SwiftUI, following MVVM architecture and integrating with Supabase for backend services.
+
+## Tech Stack
+- SwiftUI for declarative UI
+- MVVM architecture with ObservableObject view models  
+- Supabase Swift SDK for authentication and database
+- Combine framework for reactive programming
+- Charts framework for data visualization (iOS 16+)
+- UserDefaults for app settings
+
+## Code Style & Conventions
+- Use Swift naming conventions (camelCase for variables/functions, PascalCase for types)
+- Follow Apple's Human Interface Guidelines for UI/UX
+- Use meaningful variable and function names
+- Add comprehensive documentation for complex functions
+- Use SF Symbols for consistent iconography
+- Support Dynamic Type and accessibility features
+
+## Architecture Patterns
+- MVVM: Separate View, ViewModel, and Model layers
+- ViewModels should be ObservableObject classes
+- Use @Published properties for reactive UI updates
+- Keep business logic in ViewModels, not Views
+- Use dependency injection for services
+
+## File Organization
+```
+LynLift/
+├── Models/              # Data models (User, Workout, Exercise, etc.)
+├── Views/               # SwiftUI views
+├── ViewModels/          # MVVM view models
+├── Services/            # API services, Supabase integration
+├── Components/          # Reusable UI components
+├── Extensions/          # Swift extensions
+└── Utils/              # Utility functions and helpers
+```
+
+## Data Model First Approach
+**CRITICAL**: When adding new features or making changes, ALWAYS consider the data models first:
+
+1. **Analyze Existing Models**: Review relevant models (User, Workout, Exercise, ExerciseSet, BodyWeight, etc.) before implementing features
+2. **Model Dependencies**: Understand relationships between models (Workout contains WorkoutExercise, ExerciseSet belongs to Workout, etc.)
+3. **Data Flow**: Consider how data flows from models → ViewModels → Views
+4. **Database Schema**: Ensure new features align with database structure and Supabase integration
+5. **Model Extensions**: Update models with computed properties and helper methods as needed
+6. **Validation**: Add proper validation to models for data integrity
+
+### Current Data Models:
+- **User**: Authentication and profile data
+- **Workout**: Workout sessions with category, duration, pause tracking
+- **WorkoutExercise**: Exercises within a specific workout
+- **Exercise**: Exercise library/database
+- **ExerciseSet**: Individual sets with weight/reps/volume
+- **NewExerciseSet**: Temporary sets during active workout
+- **ExercisePerformance**: Previous workout performance data
+- **BodyWeight**: Weight tracking with units
+- **WorkoutCategory**: Predefined workout types (Push, Pull, Legs, Shoulders, Custom)
+
+### Model Relationships:
+- User → Workouts (1:many)
+- User → Exercises (1:many)  
+- User → BodyWeights (1:many)
+- Workout → WorkoutExercises (1:many)
+- WorkoutExercise → ExerciseSets (1:many)
+- Exercise → ExerciseSets (1:many)
+
+## SwiftUI Best Practices
+- Use @StateObject for ViewModels owned by the view
+- Use @ObservedObject for ViewModels passed from parent
+- Prefer @State for simple local state
+- Use @Binding for two-way data flow
+- Keep views small and focused on single responsibility
+- Extract complex views into smaller components
+- Use proper preview data for SwiftUI previews
+
+## Networking & Data
+- Use async/await for all network operations
+- Handle errors gracefully with user-friendly messages
+- Implement offline support with local caching
+- Use Combine for reactive data streams
+- Validate all user inputs before sending to API
+- Use NotificationCenter for cross-component communication
+
+## UI/UX Guidelines
+- Follow iOS design patterns and navigation
+- Support both light and dark mode
+- Use blue theme throughout the app (matching authentication gradient)
+- Use haptic feedback for user interactions
+- Show loading states and progress indicators
+- Handle empty states with helpful messaging
+- Implement pull-to-refresh where appropriate
+
+## Error Handling
+- Use proper error types and handling
+- Show user-friendly error messages
+- Log errors for debugging (non-sensitive data only)
+- Implement retry mechanisms for network failures
+
+## Performance
+- Use lazy loading for large lists
+- Implement proper image caching
+- Avoid unnecessary UI updates
+- Use background queues for heavy operations
+
+## Security
+- Store sensitive data in Keychain
+- Validate all user inputs
+- Use secure network requests
+- Follow privacy best practices
+
+## Testing
+- Write unit tests for ViewModels and business logic
+- Use dependency injection for testable code
+- Create mock services for testing
+- Test error scenarios and edge cases
+
+## Supabase Integration
+- Centralize Supabase operations in SupabaseService
+- Use proper error handling for API calls
+- Implement real-time subscriptions where beneficial
+- Cache data locally for offline support
+- Ensure data model alignment with database schema
+
+## Comments & Documentation
+- Document public APIs and complex algorithms
+- Use TODO/FIXME comments for future improvements
+- Keep comments up-to-date with code changes
+- Use meaningful commit messages
+
+## Feature Development Workflow
+1. **Data Model Analysis**: Review and update relevant data models
+2. **API/Service Layer**: Implement or update service methods
+3. **ViewModel Logic**: Create or update ViewModels with business logic
+4. **UI Implementation**: Build SwiftUI views with proper state management
+5. **Testing**: Verify data flow and user interactions
+6. **Documentation**: Update comments and documentation 
