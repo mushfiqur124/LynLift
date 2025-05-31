@@ -6,6 +6,14 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B04F55E52DEBC82600B4D64E /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = B04F55E42DEBC82600B4D64E /* Auth */; };
+		B04F55E72DEBC82600B4D64E /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = B04F55E62DEBC82600B4D64E /* Functions */; };
+		B04F55E92DEBC82600B4D64E /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = B04F55E82DEBC82600B4D64E /* PostgREST */; };
+		B04F55EB2DEBC82600B4D64E /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = B04F55EA2DEBC82600B4D64E /* Realtime */; };
+		B04F55ED2DEBC82600B4D64E /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = B04F55EC2DEBC82600B4D64E /* Storage */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		B04F55912DEB960E00B4D64E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +60,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B04F55E92DEBC82600B4D64E /* PostgREST in Frameworks */,
+				B04F55E72DEBC82600B4D64E /* Functions in Frameworks */,
+				B04F55E52DEBC82600B4D64E /* Auth in Frameworks */,
+				B04F55ED2DEBC82600B4D64E /* Storage in Frameworks */,
+				B04F55EB2DEBC82600B4D64E /* Realtime in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +125,11 @@
 			);
 			name = LynLift;
 			packageProductDependencies = (
+				B04F55E42DEBC82600B4D64E /* Auth */,
+				B04F55E62DEBC82600B4D64E /* Functions */,
+				B04F55E82DEBC82600B4D64E /* PostgREST */,
+				B04F55EA2DEBC82600B4D64E /* Realtime */,
+				B04F55EC2DEBC82600B4D64E /* Storage */,
 			);
 			productName = LynLift;
 			productReference = B04F557E2DEB960D00B4D64E /* LynLift.app */;
@@ -566,6 +584,34 @@
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B04F55E42DEBC82600B4D64E /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B04F55AD2DEB967000B4D64E /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		B04F55E62DEBC82600B4D64E /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B04F55AD2DEB967000B4D64E /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		B04F55E82DEBC82600B4D64E /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B04F55AD2DEB967000B4D64E /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		B04F55EA2DEBC82600B4D64E /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B04F55AD2DEB967000B4D64E /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		B04F55EC2DEBC82600B4D64E /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B04F55AD2DEB967000B4D64E /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B04F55762DEB960D00B4D64E /* Project object */;
 }

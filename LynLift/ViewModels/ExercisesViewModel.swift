@@ -10,7 +10,7 @@ class ExercisesViewModel: ObservableObject {
     @Published var showError = false
     @Published var showAddExercise = false
     @Published var newExerciseName = ""
-    @Published var exerciseHistory: [UUID: [ExerciseSet]] = [:]
+    @Published var exercisePerformances: [UUID: ExercisePerformance] = [:]
     
     private let supabaseService = SupabaseService.shared
     private var cancellables = Set<AnyCancellable>()
@@ -35,11 +35,14 @@ class ExercisesViewModel: ObservableObject {
         
         Task {
             do {
-                let fetchedExercises = try await supabaseService.fetchExercises()
+                let fetchedExercises = try await supabaseService.getExercises()
                 await MainActor.run {
                     self.exercises = fetchedExercises.sorted { $0.name < $1.name }
                     self.isLoading = false
                 }
+                
+                // Load performance data for all exercises
+                await loadAllExercisePerformances()
             } catch {
                 await MainActor.run {
                     self.handleError(error)
@@ -48,28 +51,46 @@ class ExercisesViewModel: ObservableObject {
         }
     }
     
-    func loadExerciseHistory(for exerciseId: UUID) {
+    func loadAllExercisePerformances() async {
+        var performances: [UUID: ExercisePerformance] = [:]
+        
+        for exercise in exercises {
+            do {
+                if let performance = try await supabaseService.getExercisePerformance(exerciseId: exercise.id) {
+                    performances[exercise.id] = performance
+                }
+            } catch {
+                // Don't show error for performance loading - it's not critical
+                print("Failed to load performance for \(exercise.name): \(error)")
+            }
+        }
+        
+        await MainActor.run {
+            self.exercisePerformances = performances
+        }
+    }
+    
+    func loadExercisePerformance(for exerciseId: UUID) {
         // Don't reload if we already have data
-        guard exerciseHistory[exerciseId] == nil else { return }
+        guard exercisePerformances[exerciseId] == nil else { return }
         
         Task {
             do {
-                let history = try await supabaseService.fetchExerciseHistory(exerciseId: exerciseId, limit: 5)
-                await MainActor.run {
-                    self.exerciseHistory[exerciseId] = history
+                if let performance = try await supabaseService.getExercisePerformance(exerciseId: exerciseId) {
+                    await MainActor.run {
+                        self.exercisePerformances[exerciseId] = performance
+                    }
                 }
             } catch {
-                // Don't show error for history loading - it's not critical
-                print("Failed to load exercise history: \(error)")
+                // Don't show error for performance loading - it's not critical
+                print("Failed to load exercise performance: \(error)")
             }
         }
     }
     
     func getLastWorkoutForExercise(_ exerciseId: UUID) -> String? {
-        guard let history = exerciseHistory[exerciseId], !history.isEmpty else { return nil }
-        
-        // Get the most recent set
-        let lastSet = history.first! // History is sorted by date DESC
+        guard let performance = exercisePerformances[exerciseId],
+              let lastSet = performance.lastWorkoutSets.first else { return nil }
         
         let weightFormatted = lastSet.weight.truncatingRemainder(dividingBy: 1) == 0 ? 
             String(format: "%.0f", lastSet.weight) : String(format: "%.1f", lastSet.weight)
@@ -109,8 +130,8 @@ class ExercisesViewModel: ObservableObject {
         // For now, just remove from local array
         // In real implementation, would call supabaseService.deleteExercise()
         exercises.removeAll { $0.id == exercise.id }
-        // Also remove history
-        exerciseHistory.removeValue(forKey: exercise.id)
+        // Also remove performance data
+        exercisePerformances.removeValue(forKey: exercise.id)
     }
     
     private func handleError(_ error: Error) {

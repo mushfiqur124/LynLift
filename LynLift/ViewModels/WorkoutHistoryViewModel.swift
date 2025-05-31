@@ -38,7 +38,7 @@ class WorkoutHistoryViewModel: ObservableObject {
         
         Task {
             do {
-                let fetchedWorkouts = try await supabaseService.fetchWorkouts()
+                let fetchedWorkouts = try await supabaseService.getWorkouts()
                 await MainActor.run {
                     self.workouts = fetchedWorkouts.sorted { $0.startedAt > $1.startedAt }
                     self.isLoading = false

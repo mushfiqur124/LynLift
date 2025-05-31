@@ -36,8 +36,7 @@ class WorkoutViewModel: ObservableObject {
     
     func startWorkout(category: WorkoutCategory) async {
         do {
-            let categoryName = category == .custom ? customWorkoutName : category.rawValue
-            let workout = try await supabaseService.createWorkout(category: categoryName)
+            let workout = try await supabaseService.createWorkout(category: category, customName: category == .custom ? customWorkoutName : nil)
             currentWorkout = workout
             workoutExercises = []
             isWorkoutPaused = false
@@ -54,7 +53,7 @@ class WorkoutViewModel: ObservableObject {
     
     func startCustomWorkout(name: String) async {
         do {
-            let workout = try await supabaseService.createWorkout(category: name)
+            let workout = try await supabaseService.createWorkout(category: .custom, customName: name)
             currentWorkout = workout
             workoutExercises = []
             isWorkoutPaused = false
@@ -70,15 +69,18 @@ class WorkoutViewModel: ObservableObject {
     }
     
     func endWorkout() async {
-        guard let workout = currentWorkout else { return }
+        guard var workout = currentWorkout else { return }
         
         do {
             // Update workout with final pause duration if paused
             if isWorkoutPaused, let pauseStart = pauseStartTime {
-                currentWorkout?.pausedDuration += Date().timeIntervalSince(pauseStart)
+                workout.pausedDuration += Date().timeIntervalSince(pauseStart)
             }
             
-            try await supabaseService.endWorkout(workoutId: workout.id)
+            // Set the ended time
+            workout.endedAt = Date()
+            
+            try await supabaseService.updateWorkout(workout)
             currentWorkout = nil
             workoutExercises = []
             exercisePerformances = [:]
@@ -114,7 +116,7 @@ class WorkoutViewModel: ObservableObject {
     func loadExercises() {
         Task {
             do {
-                let exercises = try await supabaseService.fetchExercises()
+                let exercises = try await supabaseService.getExercises()
                 await MainActor.run {
                     self.availableExercises = exercises
                 }
@@ -128,9 +130,17 @@ class WorkoutViewModel: ObservableObject {
     
     func loadExercisePerformances() async {
         do {
-            let performances = try await supabaseService.fetchExercisePerformances()
+            // Load performance for each available exercise
+            var performances: [UUID: ExercisePerformance] = [:]
+            
+            for exercise in availableExercises {
+                if let performance = try await supabaseService.getExercisePerformance(exerciseId: exercise.id) {
+                    performances[exercise.id] = performance
+                }
+            }
+            
             await MainActor.run {
-                self.exercisePerformances = Dictionary(uniqueKeysWithValues: performances.map { ($0.exerciseId, $0) })
+                self.exercisePerformances = performances
             }
         } catch {
             // Don't show error for performance loading - it's not critical
@@ -168,9 +178,11 @@ class WorkoutViewModel: ObservableObject {
     
     func loadExercisePerformanceForExercise(_ exerciseId: UUID) async {
         do {
-            // In a real app, this would load specific exercise performance
-            // For now, we'll just load all performances again
-            await loadExercisePerformances()
+            if let performance = try await supabaseService.getExercisePerformance(exerciseId: exerciseId) {
+                await MainActor.run {
+                    self.exercisePerformances[exerciseId] = performance
+                }
+            }
         } catch {
             // Don't show error for performance loading - it's not critical
             print("Failed to load exercise performance: \(error)")
@@ -204,12 +216,16 @@ class WorkoutViewModel: ObservableObject {
         let set = workoutExercises[exerciseIndex].sets[setIndex]
         
         do {
-            _ = try await supabaseService.createSet(
+            let exerciseSet = ExerciseSet(
+                id: UUID(),
                 workoutId: workout.id,
                 exerciseId: exerciseId,
                 weight: set.weight,
-                reps: set.reps
+                reps: set.reps,
+                createdAt: Date()
             )
+            
+            try await supabaseService.addExerciseSet(exerciseSet)
             
             // Mark set as completed
             workoutExercises[exerciseIndex].sets[setIndex].isCompleted = true

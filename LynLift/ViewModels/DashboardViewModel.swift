@@ -3,7 +3,7 @@ import Combine
 
 @MainActor
 class DashboardViewModel: ObservableObject {
-    @Published var workoutStats: WorkoutStats?
+    @Published var dashboardStats: DashboardStats?
     @Published var recentWorkouts: [Workout] = []
     @Published var recentWeights: [BodyWeight] = []
     @Published var isLoading = false
@@ -13,7 +13,7 @@ class DashboardViewModel: ObservableObject {
     // Weight entry
     @Published var showWeightEntry = false
     @Published var newWeight = ""
-    @Published var selectedUnit: WeightUnit = .kg
+    @Published var selectedUnit = "kg"
     
     private let supabaseService = SupabaseService.shared
     private var cancellables = Set<AnyCancellable>()
@@ -38,20 +38,20 @@ class DashboardViewModel: ObservableObject {
         
         Task {
             do {
-                async let statsTask = supabaseService.fetchWorkoutStats()
-                async let workoutsTask = supabaseService.fetchRecentWorkouts(limit: 5)
-                async let weightsTask = supabaseService.fetchBodyWeights(limit: 10)
+                async let statsTask = supabaseService.getDashboardStats()
+                async let workoutsTask = supabaseService.getWorkouts()
+                async let weightsTask = supabaseService.getBodyWeights()
                 
-                let (stats, workouts, weights) = await (
+                let (stats, allWorkouts, weights) = await (
                     try statsTask,
                     try workoutsTask,
                     try weightsTask
                 )
                 
                 await MainActor.run {
-                    self.workoutStats = stats
-                    self.recentWorkouts = workouts
-                    self.recentWeights = weights
+                    self.dashboardStats = stats
+                    self.recentWorkouts = Array(allWorkouts.prefix(5))
+                    self.recentWeights = Array(weights.prefix(10))
                     self.isLoading = false
                 }
             } catch {
@@ -70,10 +70,21 @@ class DashboardViewModel: ObservableObject {
         }
         
         do {
-            let newBodyWeight = try await supabaseService.logBodyWeight(weight: weight, unit: selectedUnit)
+            let newBodyWeight = BodyWeight(weight: weight, unit: selectedUnit, date: Date())
+            try await supabaseService.addBodyWeight(newBodyWeight)
+            
             recentWeights.insert(newBodyWeight, at: 0)
             if recentWeights.count > 10 {
                 recentWeights.removeLast()
+            }
+            
+            // Update dashboard stats to reflect new data
+            if let currentStats = dashboardStats {
+                dashboardStats = DashboardStats(
+                    monthlyWorkouts: currentStats.monthlyWorkouts,
+                    weeklyWorkouts: currentStats.weeklyWorkouts,
+                    currentWeight: weight
+                )
             }
             
             // Clear form and close sheet
@@ -124,13 +135,13 @@ extension DashboardViewModel {
         formatter.unitsStyle = .abbreviated
         let relativeDate = formatter.localizedString(for: lastWorkout.startedAt, relativeTo: Date())
         
-        return "Last workout: \(lastWorkout.category) • \(relativeDate)"
+        return "Last workout: \(lastWorkout.category.rawValue) • \(relativeDate)"
     }
     
     var weightProgressData: [WeightDataPoint] {
         return recentWeights
-            .sorted { $0.loggedAt < $1.loggedAt }
-            .map { WeightDataPoint(date: $0.loggedAt, weight: $0.weight, unit: $0.unit) }
+            .sorted { $0.date < $1.date }
+            .map { WeightDataPoint(date: $0.date, weight: $0.weight, unit: $0.unit) }
     }
     
     var latestWeight: BodyWeight? {
@@ -141,6 +152,18 @@ extension DashboardViewModel {
         guard let weight = Double(newWeight) else { return false }
         return weight > 0
     }
+    
+    var monthlyWorkouts: Int {
+        dashboardStats?.monthlyWorkouts ?? 0
+    }
+    
+    var weeklyWorkouts: Int {
+        dashboardStats?.weeklyWorkouts ?? 0
+    }
+    
+    var currentWeight: Double? {
+        dashboardStats?.currentWeight
+    }
 }
 
 // Supporting types for charts
@@ -148,5 +171,5 @@ struct WeightDataPoint: Identifiable {
     let id = UUID()
     let date: Date
     let weight: Double
-    let unit: WeightUnit
+    let unit: String
 } 
